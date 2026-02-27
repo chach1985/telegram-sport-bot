@@ -1,24 +1,19 @@
-from flask import Flask, request
 import os
-import json
-import sys
+from flask import Flask, request
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "WEBHOOK DEBUG ACTIVE"
+    return "BOT VERSION 2 - WEBHOOK DEBUG MODE"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
-
-    sys.stdout.write("\n========== NEW UPDATE ==========\n")
-    sys.stdout.write(json.dumps(data, indent=2, ensure_ascii=False))
-    sys.stdout.write("\n================================\n")
-    sys.stdout.flush()
-
-    return "OK"
+    print("========== NEW UPDATE ==========")
+    print(data)
+    print("================================")
+    return "OK", 200
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
