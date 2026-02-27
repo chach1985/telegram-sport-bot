@@ -11,20 +11,19 @@ def webhook():
     if request.method == "POST":
         data = request.get_json()
 
-        chat_id = data["message"]["chat"]["id"]
-        text = data["message"]["text"]
+        # เช็คก่อนว่ามี message และมี text หรือไม่
+        if "message" in data and "text" in data["message"]:
+            chat_id = data["message"]["chat"]["id"]
+            text = data["message"]["text"]
 
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": f"คุณพิมพ์ว่า: {text}"
-        }
+            url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": f"คุณพิมพ์ว่า: {text}"
+            }
 
-        requests.post(url, json=payload)
+            requests.post(url, json=payload)
 
         return "OK"
 
     return "Bot is running"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
