@@ -4,27 +4,24 @@ import os
 
 app = Flask(__name__)
 
+# ====== IMPORTANT ======
 TOKEN = os.environ.get("TOKEN")
-
 GROUP_ID = -1003749819628
 TOPIC_1 = 3
 TOPIC_2 = 2
-
+# =======================
 
 @app.route("/")
 def home():
     return "Bot is running."
 
-
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
-
     print("Incoming update:", data)
 
     message = None
 
-    # รองรับหลายรูปแบบ
     if "message" in data:
         message = data["message"]
     elif "edited_message" in data:
@@ -62,4 +59,5 @@ def webhook():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
