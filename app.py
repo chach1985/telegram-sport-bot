@@ -1,5 +1,6 @@
-import os
-from flask import Flask, request, jsonify
+from flask import Flask, request
+import sys
+import json
 
 app = Flask(__name__)
 
@@ -9,20 +10,15 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    try:
-        data = request.get_json(force=True)
+    data = request.get_json(force=True)
 
-        print("\n========== NEW TELEGRAM UPDATE ==========")
-        print(data)
-        print("=========================================\n")
+    print("========== NEW TELEGRAM UPDATE ==========", flush=True)
+    print(json.dumps(data, indent=2), flush=True)
+    print("=========================================", flush=True)
 
-        return jsonify({"status": "received"}), 200
+    sys.stdout.flush()
 
-    except Exception as e:
-        print("ERROR:", str(e))
-        return jsonify({"error": str(e)}), 500
-
+    return "OK", 200
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run()
