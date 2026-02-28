@@ -99,10 +99,16 @@ def index():
     return "Bot is running."
 
 
+import asyncio
+
 if __name__ == "__main__":
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     application.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 10000)),
         url_path=TOKEN,
         webhook_url=f"https://telegram-sport-bot-hk6a.onrender.com/{TOKEN}",
     )
+
