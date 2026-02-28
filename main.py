@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
@@ -8,9 +8,11 @@ from telegram.ext import (
     filters,
 )
 
+# ดึงค่าจาก Environment Variables
 TOKEN = os.environ.get("BOT_TOKEN")
-
-app = Flask(__name__)
+PORT = int(os.environ.get("PORT", 10000))
+# URL ของคุณจาก Render
+WEB_URL = "https://telegram-sport-bot-hk6a.onrender.com"
 
 CHANNEL_ROUTES = {
     -1003742462075: [
@@ -23,48 +25,34 @@ CHANNEL_ROUTES = {
     ],
 }
 
-application = Application.builder().token(TOKEN).build()
-
 ACTIVE_LIVES = {}
-
 
 async def handle_live_started(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.effective_message
     chat_id = update.effective_chat.id
-
     if chat_id in CHANNEL_ROUTES and message.video_chat_started:
         ACTIVE_LIVES[chat_id] = message.message_id
         print(f"Live started in {chat_id}")
 
-
 async def handle_live_ended(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.effective_message
     chat_id = update.effective_chat.id
-
     if chat_id in ACTIVE_LIVES and message.video_chat_ended:
         ACTIVE_LIVES.pop(chat_id, None)
         print(f"Live ended in {chat_id}")
-
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.effective_message
     chat_id = update.effective_chat.id
 
-    if chat_id not in CHANNEL_ROUTES:
-        return
-
-    if chat_id not in ACTIVE_LIVES:
+    if chat_id not in CHANNEL_ROUTES or chat_id not in ACTIVE_LIVES:
         return
 
     live_message_id = ACTIVE_LIVES[chat_id]
     username = update.effective_chat.username
+    live_link = f"https://t.me/{username}/{live_message_id}" if username else f"https://t.me/c/{str(chat_id)[4:]}/{live_message_id}"
 
-    live_link = f"https://t.me/{username}/{live_message_id}"
-
-    keyboard = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("🎥 ดูสตรีมสด", url=live_link)]]
-    )
-
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🎥 ดูสตรีมสด", url=live_link)]])
     photo_file_id = message.photo[-1].file_id
     caption = message.caption or ""
 
@@ -77,38 +65,23 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message_thread_id=route["thread_id"],
         )
 
+def main():
+    """ฟังก์ชันหลักสำหรับรันบอท"""
+    application = Application.builder().token(TOKEN).build()
 
-application.add_handler(
-    MessageHandler(filters.StatusUpdate.VIDEO_CHAT_STARTED, handle_live_started)
-)
-application.add_handler(
-    MessageHandler(filters.StatusUpdate.VIDEO_CHAT_ENDED, handle_live_ended)
-)
-application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    # เพิ่ม Handlers
+    application.add_handler(MessageHandler(filters.StatusUpdate.VIDEO_CHAT_STARTED, handle_live_started))
+    application.add_handler(MessageHandler(filters.StatusUpdate.VIDEO_CHAT_ENDED, handle_live_ended))
+    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-
-@app.route(f"/{TOKEN}", methods=["POST"])
-async def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    await application.process_update(update)
-    return "OK"
-
-
-@app.route("/")
-def index():
-    return "Bot is running."
-
-
-import asyncio
-
-if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
+    # รัน Webhook (ตัวนี้จะจัดการ Event Loop และ Web Server ให้เอง)
+    print(f"Starting bot on port {PORT}...")
     application.run_webhook(
         listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 10000)),
+        port=PORT,
         url_path=TOKEN,
-        webhook_url=f"https://telegram-sport-bot-hk6a.onrender.com/{TOKEN}",
+        webhook_url=f"{WEB_URL}/{TOKEN}"
     )
 
+if __name__ == "__main__":
+    main()
