@@ -5,7 +5,7 @@ import json
 
 app = Flask(__name__)
 
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = os.environ.get("BOT_TOKEN")  # ตั้งค่าใน Render Environment
 TELEGRAM_API = f"https://api.telegram.org/bot{TOKEN}"
 
 
@@ -18,12 +18,15 @@ def home():
 def webhook():
     data = request.get_json()
 
+    # แสดง JSON ใน Logs (เอาไว้ debug)
     print(json.dumps(data, indent=2), flush=True)
 
+    # ตรวจสอบว่ามาจาก channel_post
     if "channel_post" in data:
         message = data["channel_post"]["text"]
         source_chat_id = data["channel_post"]["chat"]["id"]
 
+        # 🔥 ใส่ mapping ตรงนี้ภายหลังได้
         target_group_id = os.environ.get("TARGET_GROUP_ID")
         topic_id = int(os.environ.get("TOPIC_ID", 0))
 
@@ -32,6 +35,7 @@ def webhook():
             "text": message,
         }
 
+        # ถ้าใช้ Topic
         if topic_id:
             payload["message_thread_id"] = topic_id
 
@@ -39,5 +43,7 @@ def webhook():
 
     return "OK", 200
 
+
+# ✅ สำคัญมากสำหรับ Render
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
