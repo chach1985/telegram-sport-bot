@@ -60,7 +60,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔴 <b>ถ่ายทอดสดเริ่มแล้ว!</b>\n"
         "อย่าพลาดความสนุก เชียร์สดไปพร้อมกันได้เลย\n\n"
         "สนใจรับชมหรือสอบถามเพิ่มเติม ติดต่อแอดมินได้ที่:\n"
-        "🆔 Line: <b>@FC345</b> หรือ <a href='https://lin.ee/aw2rc3s'>คลิกที่นี่</a>"
+        "🆔 Line: <a href='https://lin.ee/aw2rc3s'>คลิกที่นี่</a>"
     )
 
     # วนลูปส่งตามกลุ่มที่ตั้งค่าไว้
@@ -120,3 +120,4 @@ if __name__ == "__main__":
         asyncio.run(run_bot())
     except (KeyboardInterrupt, SystemExit):
         print("Bot stopped.")
+
