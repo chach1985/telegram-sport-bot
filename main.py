@@ -14,20 +14,28 @@ TOKEN = os.environ.get("BOT_TOKEN")
 PORT = int(os.environ.get("PORT", 10000))
 WEB_URL = "https://telegram-sport-bot-hk6a.onrender.com"
 
-# ลิงก์ Line@ ของคุณ
+# ลิงก์ Line@
 LINE_ADMIN_URL = "https://lin.ee/aw2rc3s"
 
-GROUP_U_TV = -1003749819628          
-GROUP_U_TV_PREMIUM = -1003787225016  
+# --- รายชื่อกลุ่มเป้าหมาย ---
+CLUB_UFA_TV = -1003749819628          
+CLUB_BALLZA_TV = -1003787225016      
+CLUB_PAKYOK_TV = -1003709427421      # เพิ่มใหม่: CLUB PAKYOK TV
 
 CHANNEL_ROUTES = {
+    # Channel เดิม (ฟุตบอล)
     -1003742462075: [
-        {"group_id": GROUP_U_TV, "thread_id": 3, "type": "free"},
-        {"group_id": GROUP_U_TV_PREMIUM, "thread_id": 2, "type": "premium"}
+        {"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}
     ],
     -1003735613798: [
-        {"group_id": GROUP_U_TV, "thread_id": 3, "type": "free"},
-        {"group_id": GROUP_U_TV_PREMIUM, "thread_id": 2, "type": "premium"}
+        {"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}
+    ],
+    # Channel ใหม่: [LIVE] สนามมวย
+    -1003866345716: [
+        {"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_PAKYOK_TV, "thread_id": 2, "type": "premium"}
     ],
 }
 
@@ -40,7 +48,7 @@ async def handle_live_started(update: Update, context: ContextTypes.DEFAULT_TYPE
     if chat_id in CHANNEL_ROUTES and message.video_chat_started:
         ACTIVE_LIVES[chat_id] = message.message_id
         SENT_MESSAGES[chat_id] = [] 
-        print(f"Live started in {chat_id}")
+        print(f"Live started in Channel {chat_id}")
 
 async def handle_live_ended(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -57,7 +65,7 @@ async def handle_live_ended(update: Update, context: ContextTypes.DEFAULT_TYPE):
             SENT_MESSAGES.pop(chat_id, None)
         
         ACTIVE_LIVES.pop(chat_id, None)
-        print(f"Live ended and messages cleaned in {chat_id}")
+        print(f"Live ended and cleaned for Channel {chat_id}")
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -68,7 +76,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_chat.username
     live_link = f"https://t.me/{username}/{live_message_id}" if username else f"https://t.me/c/{str(chat_id)[4:]}/{live_message_id}"
 
-    # ข้อความเชียร์สดสำหรับกลุ่มฟรี (นำลิงก์ออกจากข้อความแล้วไปใส่ที่ปุ่มแทน)
     ad_caption = (
         "🔴 <b>ถ่ายทอดสดเริ่มแล้ว!</b>\n"
         "อย่าพลาดความสนุก เชียร์สดไปพร้อมกันได้เลย\n\n"
@@ -79,7 +86,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             sent_msg = None
             if route["type"] == "free":
-                # กลุ่มฟรี: ปุ่มติดต่อแอดมินในไลน์
+                # ส่งรูป + ข้อความ + ปุ่มติดต่อแอดมิน
                 free_keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("💬 ติดต่อแอดมินเพื่อรับชม", url=LINE_ADMIN_URL)]
                 ])
@@ -92,7 +99,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     message_thread_id=route["thread_id"],
                 )
             elif route["type"] == "premium":
-                # กลุ่ม Premium: ปุ่มเข้าดูสตรีมโดยตรง (ไม่มีข้อความ)
+                # ส่งรูป + ปุ่มเข้าดูสตรีมโดยตรง (ไม่มีข้อความ)
                 premium_keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("🎥 เข้าชมถ่ายทอดสด", url=live_link)]
                 ])
@@ -111,7 +118,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 })
 
         except Exception as e:
-            print(f"Send error: {e}")
+            print(f"Send error to {route['group_id']}: {e}")
 
 async def run_bot():
     application = Application.builder().token(TOKEN).build()
