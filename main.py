@@ -20,7 +20,7 @@ LINE_ADMIN_URL = "https://lin.ee/aw2rc3s"
 # --- รายชื่อกลุ่มเป้าหมาย ---
 CLUB_UFA_TV = -1003749819628          
 CLUB_BALLZA_TV = -1003787225016      
-CLUB_PAKYOK_TV = -1003709427421      # เพิ่มใหม่: CLUB PAKYOK TV
+CLUB_PAKYOK_TV = -1003709427421      
 
 CHANNEL_ROUTES = {
     # Channel เดิม (ฟุตบอล)
@@ -32,10 +32,15 @@ CHANNEL_ROUTES = {
         {"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"},
         {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}
     ],
-    # Channel ใหม่: [LIVE] สนามมวย
+    # Channel สนามมวย
     -1003866345716: [
         {"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"},
         {"group_id": CLUB_PAKYOK_TV, "thread_id": 2, "type": "premium"}
+    ],
+    # เพิ่มใหม่: Channel [LIVE] สเตเดี้ยม 3
+    -1003502971775: [
+        {"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}
     ],
 }
 
@@ -86,7 +91,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             sent_msg = None
             if route["type"] == "free":
-                # ส่งรูป + ข้อความ + ปุ่มติดต่อแอดมิน
                 free_keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("💬 ติดต่อแอดมินเพื่อรับชม", url=LINE_ADMIN_URL)]
                 ])
@@ -99,7 +103,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     message_thread_id=route["thread_id"],
                 )
             elif route["type"] == "premium":
-                # ส่งรูป + ปุ่มเข้าดูสตรีมโดยตรง (ไม่มีข้อความ)
                 premium_keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("🎥 เข้าชมถ่ายทอดสด", url=live_link)]
                 ])
