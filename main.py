@@ -22,36 +22,46 @@ CLUB_BALLZA_TV = -1003787225016
 CLUB_PAKYOK_TV = -1003709427421      
 
 CHANNEL_ROUTES = {
+    # Channel ฟุตบอลเดิม
     -1003742462075: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
     -1003735613798: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
+    # Channel สนามมวย
     -1003866345716: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_PAKYOK_TV, "thread_id": 2, "type": "premium"}],
+    # Channel สเตเดี้ยม 3
     -1003502971775: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
+    # --- เพิ่มใหม่: Channel สเตเดี้ยม 4 และ 5 ---
+    -1003898955742: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
+    -1003427683772: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
 }
 
-# --- ระบบจัดการข้อมูลผ่านไฟล์ JSON ---
-DATA_FILE = "bot_data.json"
+# --- ระบบจัดการข้อมูลผ่าน Persistent Disk ---
+DATA_FILE = os.environ.get("DATA_PATH", "/etc/data/bot_data.json")
 
 def load_data():
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r") as f:
                 return json.load(f)
-        except:
+        except Exception as e:
+            print(f"Error loading JSON: {e}")
             return {"active_lives": {}, "sent_messages": {}}
     return {"active_lives": {}, "sent_messages": {}}
 
 def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
+    try:
+        with open(DATA_FILE, "w") as f:
+            json.dump(data, f)
+    except Exception as e:
+        print(f"Error saving JSON: {e}")
 
 # โหลดข้อมูลเริ่มต้น
 current_data = load_data()
-ACTIVE_LIVES = current_data["active_lives"]
-SENT_MESSAGES = current_data["sent_messages"]
+ACTIVE_LIVES = current_data.get("active_lives", {})
+SENT_MESSAGES = current_data.get("sent_messages", {})
 
 async def handle_live_started(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.effective_message
-    chat_id = str(update.effective_chat.id) # JSON ต้องใช้ Key เป็น String
+    chat_id = str(update.effective_chat.id)
     if int(chat_id) in CHANNEL_ROUTES and message.video_chat_started:
         ACTIVE_LIVES[chat_id] = message.message_id
         SENT_MESSAGES[chat_id] = []
@@ -119,7 +129,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 save_data({"active_lives": ACTIVE_LIVES, "sent_messages": SENT_MESSAGES})
 
         except Exception as e:
-            print(f"Send error: {e}")
+            print(f"Send error to {route['group_id']}: {e}")
 
 async def run_bot():
     application = Application.builder().token(TOKEN).build()
