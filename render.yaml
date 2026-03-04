@@ -2,11 +2,11 @@ services:
   - type: web
     name: telegram-sport-bot
     env: python
-    plan: free
+    plan: starter  # ปรับจากเดิมเป็น starter ตามแพลนที่คุณสมัคร
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python main.py"
     envVars:
       - key: BOT_TOKEN
         sync: false
       - key: PYTHON_VERSION
-        value: 3.11.10
+        value: 3.11.10  # ระบุเวอร์ชันที่เสถียรเพื่อป้องกันปัญหา Event Loop
