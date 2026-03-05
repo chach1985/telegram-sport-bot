@@ -22,14 +22,10 @@ CLUB_BALLZA_TV = -1003787225016
 CLUB_PAKYOK_TV = -1003709427421      
 
 CHANNEL_ROUTES = {
-    # Channel ฟุตบอลเดิม
     -1003742462075: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
     -1003735613798: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
-    # Channel สนามมวย
     -1003866345716: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_PAKYOK_TV, "thread_id": 2, "type": "premium"}],
-    # Channel สเตเดี้ยม 3
     -1003502971775: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
-    # --- เพิ่มใหม่: Channel สเตเดี้ยม 4 และ 5 ---
     -1003898955742: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
     -1003427683772: [{"group_id": CLUB_UFA_TV, "thread_id": 3, "type": "free"}, {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"}],
 }
@@ -54,7 +50,6 @@ def save_data(data):
     except Exception as e:
         print(f"Error saving JSON: {e}")
 
-# โหลดข้อมูลเริ่มต้น
 current_data = load_data()
 ACTIVE_LIVES = current_data.get("active_lives", {})
 SENT_MESSAGES = current_data.get("sent_messages", {})
@@ -66,25 +61,29 @@ async def handle_live_started(update: Update, context: ContextTypes.DEFAULT_TYPE
         ACTIVE_LIVES[chat_id] = message.message_id
         SENT_MESSAGES[chat_id] = []
         save_data({"active_lives": ACTIVE_LIVES, "sent_messages": SENT_MESSAGES})
-        print(f"Live started and saved: {chat_id}")
+        print(f"Live started: {chat_id}")
 
 async def handle_live_ended(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = str(update.effective_chat.id)
     if chat_id in ACTIVE_LIVES and update.effective_message.video_chat_ended:
         if chat_id in SENT_MESSAGES:
+            # ลบเฉพาะข้อความที่เป็นประเภท premium เท่านั้น
             for msg_info in SENT_MESSAGES[chat_id]:
-                try:
-                    await context.bot.delete_message(
-                        chat_id=msg_info["group_id"],
-                        message_id=msg_info["message_id"]
-                    )
-                except Exception as e:
-                    print(f"Delete error: {e}")
+                if msg_info.get("type") == "premium":
+                    try:
+                        await context.bot.delete_message(
+                            chat_id=msg_info["group_id"],
+                            message_id=msg_info["message_id"]
+                        )
+                    except Exception as e:
+                        print(f"Delete error: {e}")
+            
+            # ล้างข้อมูลออกจากลิสต์หลังจากจบสตรีม
             SENT_MESSAGES.pop(chat_id, None)
         
         ACTIVE_LIVES.pop(chat_id, None)
         save_data({"active_lives": ACTIVE_LIVES, "sent_messages": SENT_MESSAGES})
-        print(f"Live ended and cleaned: {chat_id}")
+        print(f"Live ended (Premium cleaned, Free kept): {chat_id}")
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = str(update.effective_chat.id)
@@ -124,12 +123,17 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     message_thread_id=route["thread_id"],
                 )
             
+            # เก็บข้อมูลโดยระบุประเภท (free/premium) ไว้ด้วยเพื่อใช้กรองตอนลบ
             if sent_msg:
-                SENT_MESSAGES[chat_id].append({"group_id": route["group_id"], "message_id": sent_msg.message_id})
+                SENT_MESSAGES[chat_id].append({
+                    "group_id": route["group_id"], 
+                    "message_id": sent_msg.message_id,
+                    "type": route["type"]
+                })
                 save_data({"active_lives": ACTIVE_LIVES, "sent_messages": SENT_MESSAGES})
 
         except Exception as e:
-            print(f"Send error to {route['group_id']}: {e}")
+            print(f"Send error: {e}")
 
 async def run_bot():
     application = Application.builder().token(TOKEN).build()
