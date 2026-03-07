@@ -16,7 +16,9 @@ from telegram.ext import (
 TOKEN = os.environ.get("BOT_TOKEN")
 PORT = int(os.environ.get("PORT", 10000))
 WEB_URL = "https://telegram-sport-bot-hk6a.onrender.com"
-ADMIN_IDS = [7029914099, 5915826734, 7945628926] 
+
+# อัปเดตรายชื่อแอดมิน (เพิ่ม ID 6942060939 เรียบร้อย)
+ADMIN_IDS = [7029914099, 5915826734, 7945628926, 6942060939] 
 
 LINE_FREE_ADMIN = "https://lin.ee/aw2rc3s"
 LINE_PREMIUM_ADMIN = "https://tinyurl.com/ufa345-24"
@@ -30,9 +32,7 @@ ROUTES = {
     "pakyok":   {"group_id": -1003709427421, "thread_id": 1, "type": "premium", "name": "CLUB PAKYOK"},
 }
 
-DATA_PATH = os.environ.get("DATA_PATH", "/etc/data/bot_data.json")
-
-# --- ฟังก์ชันจัดการแอดมิน ---
+# --- ส่วน Admin Control Panel ---
 async def start_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS: return
     keyboard = [[InlineKeyboardButton(f"📤 ส่งไป: {info['name']}", callback_data=f"target_{key}")] for key, info in ROUTES.items()]
@@ -83,21 +83,16 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=route["group_id"], text=update.effective_message.text, reply_markup=kb, message_thread_id=route["thread_id"], parse_mode="HTML")
         
         await update.message.reply_text("✅ ส่งเรียบร้อย!")
-        context.user_data.clear() # ล้างค่าเพื่อรอส่งครั้งใหม่
+        context.user_data.clear() 
     except Exception as e:
         await update.message.reply_text(f"❌ ผิดพลาด: {e}")
 
-# --- ส่วน Live Stream (คงไว้ตามเดิม) ---
-# ... (handle_live_started, handle_live_ended เหมือนโค้ดล่าสุด)
-
+# --- เริ่มการทำงาน ---
 async def run_bot():
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("start", start_admin))
     application.add_handler(CallbackQueryHandler(button_callback))
     application.add_handler(MessageHandler((filters.PHOTO | filters.TEXT) & (~filters.COMMAND), handle_broadcast))
-    # handlers สำหรับสตรีม
-    # application.add_handler(MessageHandler(filters.StatusUpdate.VIDEO_CHAT_STARTED, handle_live_started))
-    # application.add_handler(MessageHandler(filters.StatusUpdate.VIDEO_CHAT_ENDED, handle_live_ended))
 
     await application.initialize()
     await application.start()
