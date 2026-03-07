@@ -68,14 +68,11 @@ async def handle_stream_events(update: Update, context: ContextTypes.DEFAULT_TYP
     chat_id = str(update.effective_chat.id)
     if int(chat_id) not in STREAM_CHANNELS: return
 
-    # เริ่มสตรีม
     if update.effective_message.video_chat_started:
         ACTIVE_LIVES[chat_id] = update.effective_message.message_id
         SENT_MESSAGES[chat_id] = []
         save_data({"active_lives": ACTIVE_LIVES, "sent_messages": SENT_MESSAGES})
-        print(f"DEBUG: Live Started in {chat_id}")
-
-    # จบสตรีม
+    
     elif update.effective_message.video_chat_ended:
         if chat_id in ACTIVE_LIVES:
             if chat_id in SENT_MESSAGES:
@@ -86,16 +83,16 @@ async def handle_stream_events(update: Update, context: ContextTypes.DEFAULT_TYP
                 SENT_MESSAGES.pop(chat_id, None)
             ACTIVE_LIVES.pop(chat_id, None)
             save_data({"active_lives": ACTIVE_LIVES, "sent_messages": SENT_MESSAGES})
-            print(f"DEBUG: Live Ended in {chat_id}")
 
 async def handle_stream_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = str(update.effective_chat.id)
-    # ถ้าส่งรูปในแชนแนลที่มีสตรีมเปิดอยู่
     if int(chat_id) in STREAM_CHANNELS and chat_id in ACTIVE_LIVES:
         live_id = ACTIVE_LIVES[chat_id]
         user_name = update.effective_chat.username
         live_link = f"https://t.me/{user_name}/{live_id}" if user_name else f"https://t.me/c/{chat_id[4:]}/{live_id}"
         
+        photo_file_id = update.effective_message.photo[-1].file_id
+
         for route in STREAM_CHANNELS[int(chat_id)]:
             kb = None
             cap = "🔴 <b>ถ่ายทอดสดเริ่มแล้ว!</b>"
@@ -109,17 +106,25 @@ async def handle_stream_photo(update: Update, context: ContextTypes.DEFAULT_TYPE
                 ])
             
             try:
-                sent = await context.bot.send_photo(chat_id=route["group_id"], photo=update.effective_message.photo[-1].file_id, 
-                                                   caption=cap, parse_mode="HTML", reply_markup=kb, message_thread_id=route["thread_id"])
+                sent = await context.bot.send_photo(
+                    chat_id=route["group_id"], 
+                    photo=photo_file_id, 
+                    caption=cap, 
+                    parse_mode="HTML", 
+                    reply_markup=kb, 
+                    message_thread_id=route["thread_id"]
+                )
+                if chat_id not in SENT_MESSAGES: SENT_MESSAGES[chat_id] = []
                 SENT_MESSAGES[chat_id].append({"group_id": route["group_id"], "message_id": sent.message_id, "type": route["type"]})
                 save_data({"active_lives": ACTIVE_LIVES, "sent_messages": SENT_MESSAGES})
-            except Exception as e: print(f"Send Stream Error: {e}")
+            except Exception as e:
+                print(f"Error sending to {route['group_id']}: {e}")
 
 # --- 2. ระบบแอดมินส่งข่าว (Manual Broadcast) ---
 async def start_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMIN_IDS: return
     keyboard = [[InlineKeyboardButton(f"📤 ส่งไป: {info['name']}", callback_data=f"target_{key}")] for key, info in ROUTES.items()]
-    await update.message.reply_text("🛠 **Admin Control**\nเลือกกลุ่มเป้าหมาย:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text("🛠 **Admin Control Panel**", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -136,7 +141,6 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(f"ตั้งค่าเรียบร้อย ✅\n📌 **ส่งรูปหรือข้อความมาได้เลยครับ**")
 
 async def handle_admin_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ตรวจสอบว่าเป็นแอดมินส่งในแชทส่วนตัวบอท
     if update.effective_user.id not in ADMIN_IDS or 'target' not in context.user_data: return
     if update.effective_chat.type != "private": return
 
@@ -160,22 +164,21 @@ async def handle_admin_broadcast(update: Update, context: ContextTypes.DEFAULT_T
         else:
             await context.bot.send_message(chat_id=target["group_id"], text=update.effective_message.text, 
                                          reply_markup=kb, message_thread_id=target["thread_id"], parse_mode="HTML")
-        await update.message.reply_text("✅ ส่งข้อความเรียบร้อย!")
+        await update.message.reply_text("✅ ส่งเรียบร้อย!")
         context.user_data.clear()
     except Exception as e: await update.message.reply_text(f"❌ Error: {e}")
 
-# --- Main Runtime ---
+# --- รันบอท ---
 async def run_bot():
     application = Application.builder().token(TOKEN).build()
     
-    # 1. จัดการเหตุการณ์สตรีม (สำคัญ: ต้องตรวจจับสัญญาณ Start/End ก่อน)
+    # สำคัญ: เรียงลำดับตัวตรวจจับสัญญาณให้ถูกต้อง
     application.add_handler(MessageHandler(filters.StatusUpdate.VIDEO_CHAT_STARTED | filters.StatusUpdate.VIDEO_CHAT_ENDED, handle_stream_events))
-    application.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.CHANNEL, handle_stream_photo))
+    application.add_handler(MessageHandler(filters.ChatType.CHANNEL & filters.PHOTO, handle_stream_photo))
     
-    # 2. จัดการระบบแอดมิน (Broadcast)
     application.add_handler(CommandHandler("start", start_admin))
     application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(MessageHandler((filters.PHOTO | filters.TEXT) & filters.ChatType.PRIVATE & (~filters.COMMAND), handle_admin_broadcast))
+    application.add_handler(MessageHandler(filters.ChatType.PRIVATE & (filters.PHOTO | filters.TEXT) & (~filters.COMMAND), handle_admin_broadcast))
 
     await application.initialize()
     await application.start()
