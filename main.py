@@ -89,29 +89,31 @@ BROADCAST_TARGETS: dict[str, dict] = {
 # =====================================================
 
 CHANNEL_ROUTES: dict[int, list[dict]] = {
-    -1003742462075: [
-        {"group_id": CLUB_UFA_TV,    "thread_id": 129, "type": "free"},
-        {"group_id": CLUB_BALLZA_TV, "thread_id": 1,   "type": "premium"},
+    # ---- CLUB BALLZA channels ----
+    -1003742462075: [  # สเตเดี้ยม 1
+        {"group_id": CLUB_UFA_TV,    "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"},
     ],
-    -1003735613798: [
-        {"group_id": CLUB_UFA_TV,    "thread_id": 129, "type": "free"},
-        {"group_id": CLUB_BALLZA_TV, "thread_id": 1,   "type": "premium"},
+    -1003735613798: [  # สเตเดี้ยม 2
+        {"group_id": CLUB_UFA_TV,    "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"},
     ],
-    -1003866345716: [
-        {"group_id": CLUB_UFA_TV,    "thread_id": 133, "type": "free"},
-        {"group_id": CLUB_PAKYOK_TV, "thread_id": 1,   "type": "premium"},
+    -1003502971775: [  # สเตเดี้ยม 3
+        {"group_id": CLUB_UFA_TV,    "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"},
     ],
-    -1003502971775: [
-        {"group_id": CLUB_UFA_TV,    "thread_id": 129, "type": "free"},
-        {"group_id": CLUB_BALLZA_TV, "thread_id": 1,   "type": "premium"},
+    -1003898955742: [  # สเตเดี้ยม 4
+        {"group_id": CLUB_UFA_TV,    "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"},
     ],
-    -1003898955742: [
-        {"group_id": CLUB_UFA_TV,    "thread_id": 129, "type": "free"},
-        {"group_id": CLUB_BALLZA_TV, "thread_id": 1,   "type": "premium"},
+    -1003427683772: [  # สเตเดี้ยม 5
+        {"group_id": CLUB_UFA_TV,    "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_BALLZA_TV, "thread_id": 2, "type": "premium"},
     ],
-    -1003427683772: [
-        {"group_id": CLUB_UFA_TV,    "thread_id": 129, "type": "free"},
-        {"group_id": CLUB_BALLZA_TV, "thread_id": 1,   "type": "premium"},
+    # ---- CLUB PAKYOK channel ----
+    -1003866345716: [  # สนามมวย
+        {"group_id": CLUB_UFA_TV,    "thread_id": 3, "type": "free"},
+        {"group_id": CLUB_PAKYOK_TV, "thread_id": 2, "type": "premium"},
     ],
 }
 
